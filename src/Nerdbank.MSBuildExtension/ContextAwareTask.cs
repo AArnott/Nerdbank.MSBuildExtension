@@ -11,7 +11,7 @@
     /// A base class to use for an MSBuild Task that needs to supply its own dependencies
     /// independently of the assemblies that the hosting build engine may be willing to supply.
     /// </summary>
-    public abstract partial class ContextAwareTask : Task, ICancelableTask
+    public abstract partial class ContextAwareTask : ICancelableTask
     {
         /// <summary>
         /// The source of the <see cref="CancellationToken" /> that is canceled when
@@ -43,5 +43,27 @@
         /// The body of the Task to execute within the isolation boundary.
         /// </summary>
         protected abstract bool ExecuteIsolated();
+
+        /// <summary>
+        /// Loads an assembly with a given name.
+        /// </summary>
+        /// <param name="assemblyName">The name of the assembly to load.</param>
+        /// <returns>The loaded assembly, if one could be found; otherwise <c>null</c>.</returns>
+        /// <remarks>
+        /// The default implementation searches the <see cref="ManagedDllDirectory"/> folder for
+        /// any assembly with a matching simple name.
+        /// Derived types may use <see cref="LoadAssemblyByPath(string)"/> to load an assembly
+        /// from a given path once some path is found.
+        /// </remarks>
+        protected virtual Assembly LoadAssemblyByName(AssemblyName assemblyName)
+        {
+            string assemblyPath = Path.Combine(this.ManagedDllDirectory, assemblyName.Name) + ".dll";
+            if (File.Exists(assemblyPath))
+            {
+                return this.LoadAssemblyByPath(assemblyPath);
+            }
+
+            return null;
+        }
     }
 }

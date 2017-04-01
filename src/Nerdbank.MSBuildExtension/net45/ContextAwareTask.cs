@@ -7,11 +7,22 @@ namespace MSBuildExtensionTask
     using Microsoft.Build.Framework;
     using Microsoft.Build.Utilities;
 
-    partial class ContextAwareTask : Task
+    partial class ContextAwareTask : AppDomainIsolatedTask
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContextAwareTask"/> class.
+        /// </summary>
+        public ContextAwareTask()
+        {
+            // MSBuild Full provides this isolation.
+            this.IsIsolated = true;
+        }
+
         /// <inheritdoc />
         public sealed override bool Execute()
         {
+            AppDomain.CurrentDomain.AssemblyResolve += this.CurrentDomain_AssemblyResolve;
+
             // On .NET Framework (on Windows), we find native binaries by adding them to our PATH.
             if (this.UnmanagedDllDirectory != null)
             {
@@ -25,6 +36,21 @@ namespace MSBuildExtensionTask
             }
 
             return this.ExecuteIsolated();
+        }
+
+        /// <summary>
+        /// Loads the assembly at the specified path within the isolated context.
+        /// </summary>
+        /// <param name="assemblyPath">The path to the assembly to be loaded.</param>
+        /// <returns>The loaded assembly.</returns>
+        protected Assembly LoadAssemblyByPath(string assemblyPath)
+        {
+            return Assembly.LoadFile(assemblyPath);
+        }
+
+        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            return this.LoadAssemblyByName(new AssemblyName(args.Name));
         }
     }
 }

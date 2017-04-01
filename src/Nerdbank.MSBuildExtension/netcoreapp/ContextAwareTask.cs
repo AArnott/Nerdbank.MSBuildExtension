@@ -10,12 +10,14 @@ namespace MSBuildExtensionTask
 
     partial class ContextAwareTask : Task
     {
+        private CustomAssemblyLoader ctxt;
+
         /// <inheritdoc />
         public sealed override bool Execute()
         {
             string taskAssemblyPath = new Uri(this.GetType().GetTypeInfo().Assembly.CodeBase).LocalPath;
-            var ctxt = new CustomAssemblyLoader(this);
-            Assembly inContextAssembly = ctxt.LoadFromAssemblyPath(taskAssemblyPath);
+            this.ctxt = new CustomAssemblyLoader(this);
+            Assembly inContextAssembly = this.ctxt.LoadFromAssemblyPath(taskAssemblyPath);
             Type innerTaskType = inContextAssembly.GetType(this.GetType().FullName);
             object innerTask = Activator.CreateInstance(innerTaskType);
 
@@ -37,6 +39,8 @@ namespace MSBuildExtensionTask
             // Tell the inner task that it is isolated.
             innerTaskType.GetProperty(nameof(IsIsolated), BindingFlags.NonPublic | BindingFlags.Instance)
                 .SetValue(innerTask, true);
+            innerTaskType.GetField(nameof(ctxt), BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(innerTask, this.ctxt);
 
             // Forward any cancellation requests
             MethodInfo innerCancelMethod = innerTaskType.GetMethod(nameof(Cancel));
@@ -58,6 +62,21 @@ namespace MSBuildExtensionTask
             }
         }
 
+        /// <summary>
+        /// Loads the assembly at the specified path within the isolated context.
+        /// </summary>
+        /// <param name="assemblyPath">The path to the assembly to be loaded.</param>
+        /// <returns>The loaded assembly.</returns>
+        protected Assembly LoadAssemblyByPath(string assemblyPath)
+        {
+            if (this.ctxt == null)
+            {
+                throw new InvalidOperationException("AssemblyLoadContext must be set first.");
+            }
+
+            return this.ctxt.LoadFromAssemblyPath(assemblyPath);
+        }
+
         private class CustomAssemblyLoader : AssemblyLoadContext
         {
             private readonly ContextAwareTask loaderTask;
@@ -69,13 +88,8 @@ namespace MSBuildExtensionTask
 
             protected override Assembly Load(AssemblyName assemblyName)
             {
-                string assemblyPath = Path.Combine(this.loaderTask.ManagedDllDirectory, assemblyName.Name) + ".dll";
-                if (File.Exists(assemblyPath))
-                {
-                    return LoadFromAssemblyPath(assemblyPath);
-                }
-
-                return Default.LoadFromAssemblyName(assemblyName);
+                return this.loaderTask.LoadAssemblyByName(assemblyName)
+                    ?? Default.LoadFromAssemblyName(assemblyName);
             }
 
             protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
