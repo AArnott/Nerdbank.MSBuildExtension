@@ -1,0 +1,12 @@
+version: '{build}'
+skip_tags: true
+image: Visual Studio 2017
+configuration: Release
+before_build:
+- dotnet restore src
+build_script:
+- dotnet build src /nologo
+- dotnet pack src --no-build /nologo
+artifacts:
+- path: 'bin\**\*.nupkg'
+  name: NuGet Package
