@@ -34,15 +34,28 @@ namespace MSBuildExtensionTask
                 propertyPair.innerProperty.SetValue(innerTask, outerPropertyValue);
             }
 
-            var executeInnerMethod = innerTaskType.GetMethod(nameof(ExecuteIsolated), BindingFlags.Instance | BindingFlags.NonPublic);
-            bool result = (bool)executeInnerMethod.Invoke(innerTask, new object[0]);
+            // Tell the inner task that it is isolated.
+            innerTaskType.GetProperty(nameof(IsIsolated), BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(innerTask, true);
 
-            foreach (var propertyPair in outputPropertiesMap)
+            // Forward any cancellation requests
+            MethodInfo innerCancelMethod = innerTaskType.GetMethod(nameof(Cancel));
+            using (this.CancellationToken.Register(() => innerCancelMethod.Invoke(innerTask, new object[0])))
             {
-                propertyPair.outerProperty.SetValue(this, propertyPair.innerProperty.GetValue(innerTask));
-            }
+                this.CancellationToken.ThrowIfCancellationRequested();
 
-            return result;
+                // Execute the inner task.
+                var executeInnerMethod = innerTaskType.GetMethod(nameof(ExecuteIsolated), BindingFlags.Instance | BindingFlags.NonPublic);
+                bool result = (bool)executeInnerMethod.Invoke(innerTask, new object[0]);
+
+                // Retrieve any output properties.
+                foreach (var propertyPair in outputPropertiesMap)
+                {
+                    propertyPair.outerProperty.SetValue(this, propertyPair.innerProperty.GetValue(innerTask));
+                }
+
+                return result;
+            }
         }
 
         private class CustomAssemblyLoader : AssemblyLoadContext

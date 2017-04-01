@@ -4,7 +4,6 @@
     <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
     <Description>Package to make writing MSBuild extensions easier that work both with MSBuild Core and MSBuild (Full).</Description>
     <PackageProjectUrl>http://github.com/aarnott/Nerdbank.MSBuildExtension/</PackageProjectUrl>
