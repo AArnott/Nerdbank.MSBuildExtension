@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+
+    <Description>Package to make writing MSBuild extensions easier that work both with MSBuild Core and MSBuild (Full).</Description>
+    <PackageProjectUrl>http://github.com/aarnott/Nerdbank.MSBuildExtension/</PackageProjectUrl>
+    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Company>Andrew Arnott</Company>
+    <Authors>Andrew Arnott</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="net45\**" Condition=" '$(TargetFramework)' != 'net45' " />
+    <Compile Remove="netcoreapp\**" Condition=" '$(TargetFramework)' != 'netcoreapp1.0' " />
+    <None Include="build\**">
+      <Pack>true</Pack>
+      <PackagePath>build\%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="1.6.25" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45' ">
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="14.3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.0'">
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="15.1.548" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+
+  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <PackageLicenseUrl>https://raw.githubusercontent.com/AArnott/Nerdbank.MSBuildExtension/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
+  </Target>
+</Project>
