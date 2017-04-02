@@ -1,0 +1,12 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <YourPackageNameToolsPath Condition=" '$(YourPackageNameToolsPath)' == '' ">$(YourPackageNameToolsRootPath)$(YourPackageNameToolsSubPath)</YourPackageNameToolsPath>
+  </PropertyGroup>
+
+  <UsingTask TaskName="YourTaskName" AssemblyFile="$(YourPackageNameToolsPath)SampleExtension.dll" />
+
+  <Target Name="YourPackageNameBuildExtension" AfterTargets="Build">
+    <YourTaskName
+      ProjectName="$(MSBuildProjectName)" />
+  </Target>
+</Project>

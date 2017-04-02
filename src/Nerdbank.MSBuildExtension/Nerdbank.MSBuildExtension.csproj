@@ -1,9 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\opensource.snk</AssemblyOriginatorKeyFile>
 
     <Description>Package to make writing MSBuild extensions easier that work both with MSBuild Core and MSBuild (Full).</Description>
     <PackageProjectUrl>http://github.com/aarnott/Nerdbank.MSBuildExtension/</PackageProjectUrl>
@@ -19,6 +21,10 @@
     <None Include="build\**">
       <Pack>true</Pack>
       <PackagePath>build\%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
+    </None>
+    <None Include="buildMultitargeting\**">
+      <Pack>true</Pack>
+      <PackagePath>buildMultitargeting\%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
     </None>
   </ItemGroup>
 

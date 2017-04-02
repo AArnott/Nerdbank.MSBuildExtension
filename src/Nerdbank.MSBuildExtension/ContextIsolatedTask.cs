@@ -1,4 +1,4 @@
-﻿namespace MSBuildExtensionTask
+﻿namespace Nerdbank.MSBuildExtension
 {
     using System;
     using System.IO;
@@ -11,7 +11,7 @@
     /// A base class to use for an MSBuild Task that needs to supply its own dependencies
     /// independently of the assemblies that the hosting build engine may be willing to supply.
     /// </summary>
-    public abstract partial class ContextAwareTask : ICancelableTask
+    public abstract partial class ContextIsolatedTask : ICancelableTask
     {
         /// <summary>
         /// The source of the <see cref="CancellationToken" /> that is canceled when
@@ -57,6 +57,14 @@
         /// </remarks>
         protected virtual Assembly LoadAssemblyByName(AssemblyName assemblyName)
         {
+            if (assemblyName.Name.StartsWith("Microsoft.Build", StringComparison.OrdinalIgnoreCase) ||
+                assemblyName.Name.StartsWith("System.", StringComparison.OrdinalIgnoreCase))
+            {
+                // MSBuild and System.* make up our exchange types. So don't load them in this LoadContext.
+                // We need to inherit them from the default load context.
+                return null;
+            }
+
             string assemblyPath = Path.Combine(this.ManagedDllDirectory, assemblyName.Name) + ".dll";
             if (File.Exists(assemblyPath))
             {
