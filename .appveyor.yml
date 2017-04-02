@@ -8,7 +8,7 @@ build_script:
 - dotnet build src /nologo
 - dotnet pack src --no-build /nologo
 test_script:
-- ps: src\test.ps1 -All
+- ps: src\test.ps1
 artifacts:
 - path: 'bin\**\*.nupkg'
   name: NuGet Package
