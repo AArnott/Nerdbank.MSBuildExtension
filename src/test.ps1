@@ -6,14 +6,14 @@ Param(
     [switch]$NoScaffoldingPack
 )
 
+# If no msbuild flavors were specified, test them all.
+if (!($Core -or $Full)) {
+    $All = $true
+}
+
 if ($All) {
     $Core = $true
     $Full = $true
-}
-
-if (!($Core -or $Full)) {
-    Write-Error "No test framework specified."
-    return
 }
 
 # AppVeyor may be building for release with an environment variable. But paths in sample nuget.config files depend on debug builds.
