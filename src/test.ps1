@@ -15,14 +15,10 @@ msbuild /nr:false /nologo /v:quiet /t:pack "$RepoRoot\src\Nerdbank.MSBuildExtens
 Write-Host "Installing scaffolding to sample extension..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\Nerdbank.MSBuildExtension" -ErrorAction SilentlyContinue
 $versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\1.6.25\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
-$sampleExtensionContent = Get-Content -Path $SampleExtensionPath
-$newVersionTag = '<PackageReference Include="Nerdbank.MSBuildExtension" Version="'+$versionInfo.NuGetPackageVersion
-$modifiedSampleExtensionContent = $sampleExtensionContent -replace '\<PackageReference Include="Nerdbank.MSBuildExtension" Version="[^"]+',$newVersionTag
-Set-Content -Path $SampleExtensionPath -Value $modifiedSampleExtensionContent
-msbuild /nr:false /nologo /v:quiet /t:restore $SampleExtensionPath
+msbuild /nr:false /nologo /v:quiet /t:restore $SampleExtensionPath /p:DogfoodingVersion="$($versionInfo.NuGetPackageVersion)"
 
 Write-Host "Packing sample extension..." -ForegroundColor Green
-msbuild /nr:false /nologo /v:quiet /t:pack $SampleExtensionPath
+msbuild /nr:false /nologo /v:quiet /t:pack $SampleExtensionPath /p:DogfoodingVersion="$($versionInfo.NuGetPackageVersion)"
 
 Write-Host "Installing sample extension to sample consumer..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\SampleExtension" -ErrorAction SilentlyContinue
