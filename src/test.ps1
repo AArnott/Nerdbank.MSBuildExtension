@@ -1,30 +1,39 @@
 [CmdletBinding()]
 Param(
-    [Parameter(Mandatory=$true)]
-    [ValidateSet('Core', 'Full')]
-    $MSBuildFlavor
+    [switch]$Core,
+    [switch]$Full
 )
 
 $RepoRoot = "$PSScriptRoot\.."
+$SampleExtensionPath = "$RepoRoot\samples\SampleExtension\SampleExtension.csproj"
+$ExtensionConsumerPath = "$RepoRoot\samples\ExtensionConsumer\ExtensionConsumer.csproj"
 
 Write-Host "Packing scaffolding..." -ForegroundColor Green
-msbuild /nologo /v:quiet /t:pack "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
+msbuild /nr:false /nologo /v:quiet /t:restore "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
+msbuild /nr:false /nologo /v:quiet /t:pack "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
 
 Write-Host "Installing scaffolding to sample extension..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\Nerdbank.MSBuildExtension" -ErrorAction SilentlyContinue
-msbuild /nologo /v:quiet /t:restore "$RepoRoot\samples\SampleExtension"
+$versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\1.6.25\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
+$sampleExtensionContent = Get-Content -Path $SampleExtensionPath
+$newVersionTag = '<PackageReference Include="Nerdbank.MSBuildExtension" Version="'+$versionInfo.NuGetPackageVersion
+$modifiedSampleExtensionContent = $sampleExtensionContent -replace '\<PackageReference Include="Nerdbank.MSBuildExtension" Version="[^"]+',$newVersionTag
+Set-Content -Path $SampleExtensionPath -Value $modifiedSampleExtensionContent
+msbuild /nr:false /nologo /v:quiet /t:restore $SampleExtensionPath
 
 Write-Host "Packing sample extension..." -ForegroundColor Green
-msbuild /nologo /v:quiet /t:pack "$RepoRoot\samples\SampleExtension\SampleExtension.csproj"
+msbuild /nr:false /nologo /v:quiet /t:pack $SampleExtensionPath
 
 Write-Host "Installing sample extension to sample consumer..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\SampleExtension" -ErrorAction SilentlyContinue
-msbuild /nologo /v:quiet /t:restore "$RepoRoot\samples\ExtensionConsumer\ExtensionConsumer.csproj"
+msbuild /nr:false /nologo /v:quiet /t:restore $ExtensionConsumerPath
 
-if ($MSBuildFlavor -eq 'Core') {
+if ($Core) {
     Write-Host "Building sample consumer with MSBuild Core..." -ForegroundColor Green
-    dotnet build "$RepoRoot\samples\ExtensionConsumer" /nologo
-} else {
+    dotnet build $ExtensionConsumerPath /nologo
+}
+
+if ($Full) {
     Write-Host "Building sample consumer with MSBuild Full..." -ForegroundColor Green
-    msbuild /nologo /v:minimal "$RepoRoot\samples\ExtensionConsumer\ExtensionConsumer.csproj"
+    msbuild /nr:false /nologo /v:minimal $ExtensionConsumerPath
 }

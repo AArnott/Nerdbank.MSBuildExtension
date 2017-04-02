@@ -15,7 +15,7 @@ namespace Nerdbank.MSBuildExtension
         public ContextIsolatedTask()
         {
             // MSBuild Full provides this isolation.
-            this.IsIsolated = true;
+            this.isIsolated = true;
         }
 
         /// <inheritdoc />

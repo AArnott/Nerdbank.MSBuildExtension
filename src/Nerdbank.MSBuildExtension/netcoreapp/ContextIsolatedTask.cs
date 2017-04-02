@@ -10,7 +10,10 @@ namespace Nerdbank.MSBuildExtension
 
     partial class ContextIsolatedTask : Task
     {
-        private CustomAssemblyLoader ctxt;
+        /// <summary>
+        /// The context the inner task is loaded within.
+        /// </summary>
+        private AssemblyLoadContext ctxt;
 
         /// <inheritdoc />
         public sealed override bool Execute()
@@ -21,6 +24,13 @@ namespace Nerdbank.MSBuildExtension
                 this.ctxt = new CustomAssemblyLoader(this);
                 Assembly inContextAssembly = this.ctxt.LoadFromAssemblyPath(taskAssemblyPath);
                 Type innerTaskType = inContextAssembly.GetType(this.GetType().FullName);
+
+                Type innerTaskBaseType = innerTaskType;
+                while (innerTaskBaseType.FullName != typeof(ContextIsolatedTask).FullName)
+                {
+                    innerTaskBaseType = innerTaskBaseType.GetTypeInfo().BaseType;
+                }
+
                 object innerTask = Activator.CreateInstance(innerTaskType);
 
                 var outerProperties = this.GetType().GetRuntimeProperties().ToDictionary(i => i.Name);
@@ -39,10 +49,8 @@ namespace Nerdbank.MSBuildExtension
                 }
 
                 // Tell the inner task that it is isolated.
-                innerTaskType.GetProperty(nameof(IsIsolated), BindingFlags.NonPublic | BindingFlags.Instance)
+                innerTaskBaseType.GetField(nameof(isIsolated), BindingFlags.NonPublic | BindingFlags.Instance)
                     .SetValue(innerTask, true);
-                innerTaskType.GetField(nameof(ctxt), BindingFlags.NonPublic | BindingFlags.Instance)
-                    .SetValue(innerTask, this.ctxt);
 
                 // Forward any cancellation requests
                 MethodInfo innerCancelMethod = innerTaskType.GetMethod(nameof(Cancel));

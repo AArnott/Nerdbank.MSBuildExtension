@@ -19,10 +19,13 @@
         /// </summary>
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
 
+        /// <summary>Backing field for the <see cref="IsIsolated"/> property.</summary>
+        private bool isIsolated = false;
+
         /// <summary>
         /// Gets a value indicating whether this is the isolated instance (as opposed to the outer instance).
         /// </summary>
-        public bool IsIsolated { get; private set; }
+        public bool IsIsolated => this.isIsolated;
 
         /// <summary>Gets a token that is canceled when MSBuild is requesting that we abort.</summary>
         public CancellationToken CancellationToken => this.cts.Token;
