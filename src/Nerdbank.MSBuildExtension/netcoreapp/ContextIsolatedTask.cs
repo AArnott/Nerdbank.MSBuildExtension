@@ -25,51 +25,8 @@ namespace Nerdbank.MSBuildExtension
                 Assembly inContextAssembly = this.ctxt.LoadFromAssemblyPath(taskAssemblyPath);
                 Type innerTaskType = inContextAssembly.GetType(this.GetType().FullName);
 
-                Type innerTaskBaseType = innerTaskType;
-                while (innerTaskBaseType.FullName != typeof(ContextIsolatedTask).FullName)
-                {
-                    innerTaskBaseType = innerTaskBaseType.GetTypeInfo().BaseType;
-                }
-
                 object innerTask = Activator.CreateInstance(innerTaskType);
-
-                var outerProperties = this.GetType().GetRuntimeProperties().ToDictionary(i => i.Name);
-                var innerProperties = innerTaskType.GetRuntimeProperties().ToDictionary(i => i.Name);
-                var propertiesDiscovery = from outerProperty in outerProperties.Values
-                                          where outerProperty.SetMethod != null && outerProperty.GetMethod != null
-                                          let innerProperty = innerProperties[outerProperty.Name]
-                                          select new { outerProperty, innerProperty };
-                var propertiesMap = propertiesDiscovery.ToArray();
-                var outputPropertiesMap = propertiesMap.Where(pair => pair.outerProperty.GetCustomAttribute<OutputAttribute>() != null).ToArray();
-
-                foreach (var propertyPair in propertiesMap)
-                {
-                    object outerPropertyValue = propertyPair.outerProperty.GetValue(this);
-                    propertyPair.innerProperty.SetValue(innerTask, outerPropertyValue);
-                }
-
-                // Tell the inner task that it is isolated.
-                innerTaskBaseType.GetField(nameof(isIsolated), BindingFlags.NonPublic | BindingFlags.Instance)
-                    .SetValue(innerTask, true);
-
-                // Forward any cancellation requests
-                MethodInfo innerCancelMethod = innerTaskType.GetMethod(nameof(Cancel));
-                using (this.CancellationToken.Register(() => innerCancelMethod.Invoke(innerTask, new object[0])))
-                {
-                    this.CancellationToken.ThrowIfCancellationRequested();
-
-                    // Execute the inner task.
-                    var executeInnerMethod = innerTaskType.GetMethod(nameof(ExecuteIsolated), BindingFlags.Instance | BindingFlags.NonPublic);
-                    bool result = (bool)executeInnerMethod.Invoke(innerTask, new object[0]);
-
-                    // Retrieve any output properties.
-                    foreach (var propertyPair in outputPropertiesMap)
-                    {
-                        propertyPair.outerProperty.SetValue(this, propertyPair.innerProperty.GetValue(innerTask));
-                    }
-
-                    return result;
-                }
+                return this.ExecuteInnerTask(innerTask);
             }
             catch (OperationCanceledException)
             {
@@ -91,6 +48,50 @@ namespace Nerdbank.MSBuildExtension
             }
 
             return this.ctxt.LoadFromAssemblyPath(assemblyPath);
+        }
+
+        private bool ExecuteInnerTask(object innerTask)
+        {
+            Type innerTaskType = innerTask.GetType();
+            Type innerTaskBaseType = innerTaskType;
+            while (innerTaskBaseType.FullName != typeof(ContextIsolatedTask).FullName)
+            {
+                innerTaskBaseType = innerTaskBaseType.GetTypeInfo().BaseType;
+            }
+
+            var outerProperties = this.GetType().GetRuntimeProperties().ToDictionary(i => i.Name);
+            var innerProperties = innerTaskType.GetRuntimeProperties().ToDictionary(i => i.Name);
+            var propertiesDiscovery = from outerProperty in outerProperties.Values
+                                      where outerProperty.SetMethod != null && outerProperty.GetMethod != null
+                                      let innerProperty = innerProperties[outerProperty.Name]
+                                      select new { outerProperty, innerProperty };
+            var propertiesMap = propertiesDiscovery.ToArray();
+            var outputPropertiesMap = propertiesMap.Where(pair => pair.outerProperty.GetCustomAttribute<OutputAttribute>() != null).ToArray();
+
+            foreach (var propertyPair in propertiesMap)
+            {
+                object outerPropertyValue = propertyPair.outerProperty.GetValue(this);
+                propertyPair.innerProperty.SetValue(innerTask, outerPropertyValue);
+            }
+
+            // Forward any cancellation requests
+            MethodInfo innerCancelMethod = innerTaskType.GetMethod(nameof(Cancel));
+            using (this.CancellationToken.Register(() => innerCancelMethod.Invoke(innerTask, new object[0])))
+            {
+                this.CancellationToken.ThrowIfCancellationRequested();
+
+                // Execute the inner task.
+                var executeInnerMethod = innerTaskType.GetMethod(nameof(ExecuteIsolated), BindingFlags.Instance | BindingFlags.NonPublic);
+                bool result = (bool)executeInnerMethod.Invoke(innerTask, new object[0]);
+
+                // Retrieve any output properties.
+                foreach (var propertyPair in outputPropertiesMap)
+                {
+                    propertyPair.outerProperty.SetValue(this, propertyPair.innerProperty.GetValue(innerTask));
+                }
+
+                return result;
+            }
         }
 
         private class CustomAssemblyLoader : AssemblyLoadContext

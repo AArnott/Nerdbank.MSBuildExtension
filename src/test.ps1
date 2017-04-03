@@ -3,7 +3,9 @@ Param(
     [switch]$Core,
     [switch]$Full,
     [switch]$All,
-    [switch]$NoScaffoldingPack
+    [switch]$NoScaffoldingPack,
+    [ValidateSet('quiet','minimal','normal','detailed','diagnostic')]
+    $verbosity='quiet'
 )
 
 # If no msbuild flavors were specified, test them all.
@@ -19,47 +21,62 @@ if ($All) {
 # AppVeyor may be building for release with an environment variable. But paths in sample nuget.config files depend on debug builds.
 $env:Configuration='debug'
 
-$RepoRoot = "$PSScriptRoot\.."
-$SampleExtensionPath = "$RepoRoot\samples\SampleExtension\SampleExtension.csproj"
-$ExtensionConsumerPath = "$RepoRoot\samples\ExtensionConsumer\ExtensionConsumer.csproj"
+$RepoRoot = Resolve-Path "$PSScriptRoot\.."
+$TestRoot = "$PSScriptRoot\tests"
+$Script:Failures = 0
 
 if (!$NoScaffoldingPack) {
-    Write-Host "Packing scaffolding..." -ForegroundColor Green
-    msbuild /nr:false /nologo /v:quiet /t:restore "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
-    if ($LASTEXITCODE -ne 0) { return }
-    msbuild /nr:false /nologo /v:quiet /t:pack "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
-    if ($LASTEXITCODE -ne 0) { return }
+    Write-Host "Packing scaffolding..." -ForegroundColor Yellow
+    msbuild /nr:false /nologo /v:$verbosity /t:restore "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test failed."; exit 1 }
+    msbuild /nr:false /nologo /v:$verbosity /t:pack "$RepoRoot\src\Nerdbank.MSBuildExtension\Nerdbank.MSBuildExtension.csproj"
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test failed."; exit 1 }
 }
 
-Write-Host "Installing scaffolding to sample extension..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\Nerdbank.MSBuildExtension" -ErrorAction SilentlyContinue
-$versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\1.6.25\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
-msbuild /nr:false /nologo /v:quiet /t:restore $SampleExtensionPath /p:DogfoodingVersion="$($versionInfo.NuGetPackageVersion)"
-if ($LASTEXITCODE -ne 0) { return }
-
-Write-Host "Packing sample extension..." -ForegroundColor Green
-msbuild /nr:false /nologo /v:quiet /t:pack $SampleExtensionPath /p:DogfoodingVersion="$($versionInfo.NuGetPackageVersion)"
-if ($LASTEXITCODE -ne 0) { return }
-
-Write-Host "Installing sample extension to sample consumer..." -ForegroundColor Green
 Remove-Item -rec "$env:userprofile\.nuget\packages\SampleExtension" -ErrorAction SilentlyContinue
-msbuild /nr:false /nologo /v:quiet /t:restore $ExtensionConsumerPath
-if ($LASTEXITCODE -ne 0) { return }
+Remove-Item -rec "$env:userprofile\.nuget\packages\ComplexExtension" -ErrorAction SilentlyContinue
 
-$Failures = 0
+$versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\1.6.25\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
+$dogfoodPackageVersion = $versionInfo.NuGetPackageVersion
 
-if ($Core) {
-    Write-Host "Building sample consumer with MSBuild Core..." -ForegroundColor Green
-    dotnet build $ExtensionConsumerPath /nologo
-    if ($LASTEXITCODE -ne 0) { $Failures += 1 }
+function PackExtension($extensionProjectPath) {
+    Write-Host "Installing scaffolding to `"$extensionProjectPath`"..." -ForegroundColor Yellow
+    msbuild /nr:false /nologo /v:$verbosity /t:restore $extensionProjectPath /p:DogfoodingVersion="$dogfoodPackageVersion"
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test failed."; exit 1 }
+
+    Write-Host "Packing `"$extensionProjectPath`"..." -ForegroundColor Yellow
+    msbuild /nr:false /nologo /v:$verbosity /t:pack $extensionProjectPath /p:DogfoodingVersion="$dogfoodPackageVersion"
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test failed."; exit 1 }
 }
 
-if ($Full) {
-    Write-Host "Building sample consumer with MSBuild Full..." -ForegroundColor Green
-    msbuild /nr:false /nologo /v:minimal $ExtensionConsumerPath
-    if ($LASTEXITCODE -ne 0) { $Failures += 1 }
+function TestExtensionConsumer($consumerProjectPath) {
+    Write-Host "Installing msbuild extension to `"$consumerProjectPath`"..." -ForegroundColor Yellow
+    msbuild /nr:false /nologo /v:$verbosity /t:restore $consumerProjectPath
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test failed."; exit 1 }
+
+    if ($Core) {
+        Write-Host "Building `"$consumerProjectPath`" with MSBuild Core..." -ForegroundColor Yellow
+        dotnet build $consumerProjectPath /nologo
+        if ($LASTEXITCODE -ne 0) { $Script:Failures += 1 }
+    }
+
+    if ($Full) {
+        Write-Host "Building `"$consumerProjectPath`" with MSBuild Full..." -ForegroundColor Yellow
+        msbuild /nr:false /nologo /v:minimal $consumerProjectPath
+        if ($LASTEXITCODE -ne 0) { $Script:Failures += 1 }
+    }
 }
 
-if ($Failures -ne 0) {
-    Write-Error "$Failures failures occurred."
+PackExtension "$RepoRoot\samples\SampleExtension\SampleExtension.csproj"
+TestExtensionConsumer "$RepoRoot\samples\ExtensionConsumer\ExtensionConsumer.csproj"
+
+PackExtension "$TestRoot\ComplexExtension\ComplexExtension.csproj"
+TestExtensionConsumer "$TestRoot\ComplexExtensionConsumer\ComplexExtensionConsumer.csproj"
+
+if ($Script:Failures -ne 0) {
+    Write-Error "$Script:Failures failures occurred."
+    exit $Script:Failures
+} else {
+    Write-Host "Tests passed" -ForegroundColor Green
 }
