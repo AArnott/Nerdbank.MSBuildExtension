@@ -3,10 +3,9 @@ skip_tags: true
 image: Visual Studio 2017
 configuration: Release
 before_build:
-- dotnet restore src
+- msbuild /nologo /v:quiet /m src\Nerdbank.MSBuildExtension.sln /t:restore
 build_script:
-- dotnet build src /nologo
-- dotnet pack src --no-build /nologo
+- msbuild /nologo /v:minimal /m src\Nerdbank.MSBuildExtension.sln /t:build,pack
 test_script:
 - ps: src\test.ps1
 artifacts:
