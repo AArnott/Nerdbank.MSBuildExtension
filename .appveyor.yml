@@ -10,5 +10,5 @@ build_script:
 test_script:
 - ps: src\test.ps1 -All
 artifacts:
-- path: 'bin\**\*.nupkg'
+- path: 'bin\Nerdbank.MSBuildExtension\Release\*.nupkg'
   name: NuGet Package
