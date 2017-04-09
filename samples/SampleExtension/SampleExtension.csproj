@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net45</TargetFrameworks>
   </PropertyGroup>
 
   <!-- A project that consumes this one is a development dependency and as such, should not chain in any others. -->

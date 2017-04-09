@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp1.0;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net45</TargetFrameworks>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <SignAssembly>true</SignAssembly>
@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <Compile Remove="net45\**" Condition=" '$(TargetFramework)' != 'net45' " />
-    <Compile Remove="netcoreapp\**" Condition=" '$(TargetFramework)' != 'netcoreapp1.0' " />
+    <Compile Remove="netstandard1.5\**" Condition=" '$(TargetFramework)' != 'netstandard1.5' " />
     <None Include="build\**">
       <Pack>true</Pack>
       <PackagePath>build\%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
@@ -34,7 +34,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net45' ">
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="14.3" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net45'">
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="15.1.548" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>

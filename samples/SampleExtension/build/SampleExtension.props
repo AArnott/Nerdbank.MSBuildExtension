@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <YourPackageNameToolsRootPath Condition=" '$(YourPackageNameToolsRootPath)' == '' ">$(MSBuildThisFileDirectory)</YourPackageNameToolsRootPath>
-    <YourPackageNameToolsSubPath Condition=" '$(MSBuildRuntimeType)' == 'Core' ">netcoreapp1.0\</YourPackageNameToolsSubPath>
+    <YourPackageNameToolsSubPath Condition=" '$(MSBuildRuntimeType)' == 'Core' ">netstandard1.5\</YourPackageNameToolsSubPath>
     <YourPackageNameToolsSubPath Condition=" '$(MSBuildRuntimeType)' != 'Core' ">net45\</YourPackageNameToolsSubPath>
   </PropertyGroup>
 </Project>
