@@ -1,6 +1,6 @@
 # Nerdbank.MSBuildExtension
 
-Scaffolding for MSBuild extensions that work both with MSBuild Core and MSBuild (Full).
+Scaffolding for MSBuild extensions that work both with MSBuild Core and MSBuild (Full) and optionally provides isolation for the assemblies you depend on so you can load the versions you want rather than the versions MSBuild might otherwise binding redirect to.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/h5ifdo1brnns3rvv/branch/master?svg=true)](https://ci.appveyor.com/project/AArnott/nerdbank-msbuildextension/branch/master)
 [![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MSBuildExtension.svg)](https://nuget.org/packages/Nerdbank.MSBuildExtension)
