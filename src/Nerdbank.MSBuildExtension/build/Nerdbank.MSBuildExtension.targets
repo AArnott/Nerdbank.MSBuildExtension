@@ -3,4 +3,10 @@
   <PropertyGroup>
     <TargetsDesktop Condition=" '$(TargetsDesktop)' == '' and '$(TargetFramework)' == 'net45' ">true</TargetsDesktop>
   </PropertyGroup>
+
+  <Target Name="RemoveFrameworkDependencies" AfterTargets="_WalkEachTargetPerFramework">
+    <ItemGroup>
+      <_FrameworkAssemblyReferences Remove="@(_FrameworkAssemblyReferences)" />
+    </ItemGroup>
+  </Target>
 </Project>
