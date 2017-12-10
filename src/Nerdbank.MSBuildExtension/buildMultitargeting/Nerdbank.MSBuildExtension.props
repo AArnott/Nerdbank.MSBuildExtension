@@ -20,7 +20,17 @@
   <!-- Collect all dependencies and include them in the package itself, next to the Task assembly. -->
   <Target Name="CollectRuntimeOutputs" BeforeTargets="_GetPackageFiles">
     <ItemGroup>
-      <Content Include="$(OutputPath)**\*.dll;$(OutputPath)**\*.dll.config;$(OutputPath)**\*.json">
+      <Content Include="
+            $(OutputPath)**\*.dll;
+            $(OutputPath)**\*.exe;
+            $(OutputPath)**\*.dll.config;
+            $(OutputPath)**\*.json;
+            "
+            Exclude="
+            $(OutputPath)**\Microsoft.Build.Framework.dll;
+            $(OutputPath)**\Microsoft.Build.Tasks.Core.dll;
+            $(OutputPath)**\Microsoft.Build.Utilities.Core.dll;
+            ">
         <Pack>true</Pack>
         <PackagePath>build\</PackagePath>
       </Content>
