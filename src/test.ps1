@@ -37,7 +37,7 @@ Remove-Item -rec "$env:userprofile\.nuget\packages\Nerdbank.MSBuildExtension" -E
 Remove-Item -rec "$env:userprofile\.nuget\packages\SampleExtension" -ErrorAction SilentlyContinue
 Remove-Item -rec "$env:userprofile\.nuget\packages\ComplexExtension" -ErrorAction SilentlyContinue
 
-$versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\1.6.25\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
+$versionInfo = & "$env:userprofile\.nuget\packages\Nerdbank.GitVersioning\2.1.23\tools\Get-Version.ps1" -ProjectDirectory $PSScriptRoot
 $dogfoodPackageVersion = $versionInfo.NuGetPackageVersion
 
 function PackExtension($extensionProjectPath) {
