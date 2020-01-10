@@ -9,6 +9,7 @@
 
     <Description>Package to make writing MSBuild extensions easier that work both with MSBuild Core and MSBuild (Full).</Description>
     <PackageProjectUrl>http://github.com/aarnott/Nerdbank.MSBuildExtension/</PackageProjectUrl>
+    <PackageLicenseExpression>MS-PL</PackageLicenseExpression>
     <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Company>Andrew Arnott</Company>
@@ -38,10 +39,4 @@
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="15.1.548" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
-
-  <Target Name="SetNuSpecProperties" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <PackageLicenseUrl>https://raw.githubusercontent.com/AArnott/Nerdbank.MSBuildExtension/$(GitCommitIdShort)/LICENSE</PackageLicenseUrl>
-    </PropertyGroup>
-  </Target>
 </Project>
